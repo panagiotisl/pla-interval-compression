@@ -1,4 +1,6 @@
 import csv
+
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from os.path import exists
@@ -274,25 +276,47 @@ def main(filenames, e_vals, online=False):
     write_rows(filename, header, results)
 
 
+def plot_results(filename):
+    dataset_result = {}
+    with open(filename, 'r', newline='') as csvfile:
+        csvreader = csv.reader(csvfile)
+        header = next(csvreader)
+        for row in csvreader:
+            if row[0] not in dataset_result:
+                dataset_result[row[0]] = {'e': [], 'cr': [], 'cr_merged': []}
+            dataset_result[row[0]]['e'].append(float(row[2]))
+            dataset_result[row[0]]['cr'].append(float(row[6]))
+            dataset_result[row[0]]['cr_merged'].append(float(row[9]))
+
+    for dataset, results in dataset_result.items():
+        plt.plot(results['e'], results['cr'])
+        plt.plot(results['e'], results['cr_merged'])
+        plt.title(dataset)
+
+        plt.savefig(dataset[:-4] + '.png')
+        plt.clf()
+
+
+
 if __name__ == "__main__":
     files = [
-        # 'dataset/AgiaParaskeviCleanTemp_Scaled.csv',
-        # 'dataset/AristotelousCleanTemp_Scaled.csv',
-        # 'dataset/AthensCleanTemp_Scaled.csv',
-        # 'dataset/ElefsinaCleanTemp_Scaled.csv',
-        # 'dataset/GeoponikiCleanTemp_Scaled.csv',
-        # 'dataset/KoropiCleanTemp_Scaled.csv',
-        # 'dataset/LiosiaCleanTemp_Scaled.csv',
-        # 'dataset/LykovrisiCleanTemp_Scaled.csv',
-        # 'dataset/MarousiCleanTemp_Scaled.csv',
-        # 'dataset/NeaSmirniCleanTemp_Scaled.csv',
-        # 'dataset/PatisionCleanTemp_Scaled.csv',
-        # 'dataset/PeristeriCleanTemp_Scaled.csv',
-        # 'dataset/PireusCleanTemp_Scaled.csv',
-        # 'dataset/ThrakomakedonesCleanTemp_Scaled.csv'
-        'dataset/Stocks-Germany_Scaled.csv',
-        'dataset/Stocks-UK_Scaled.csv',
-        'dataset/Stocks-USA_Scaled.csv'
+        'dataset/AgiaParaskeviCleanTemp_Scaled.csv',
+        'dataset/AristotelousCleanTemp_Scaled.csv',
+        'dataset/AthensCleanTemp_Scaled.csv',
+        'dataset/ElefsinaCleanTemp_Scaled.csv',
+        'dataset/GeoponikiCleanTemp_Scaled.csv',
+        'dataset/KoropiCleanTemp_Scaled.csv',
+        'dataset/LiosiaCleanTemp_Scaled.csv',
+        'dataset/LykovrisiCleanTemp_Scaled.csv',
+        'dataset/MarousiCleanTemp_Scaled.csv',
+        'dataset/NeaSmirniCleanTemp_Scaled.csv',
+        'dataset/PatisionCleanTemp_Scaled.csv',
+        'dataset/PeristeriCleanTemp_Scaled.csv',
+        'dataset/PireusCleanTemp_Scaled.csv',
+        'dataset/ThrakomakedonesCleanTemp_Scaled.csv'
+        # 'dataset/Stocks-Germany_Scaled.csv',
+        # 'dataset/Stocks-UK_Scaled.csv',
+        # 'dataset/Stocks-USA_Scaled.csv'
     ]
 
     es = [
@@ -311,4 +335,6 @@ if __name__ == "__main__":
     ]
 
     main(files, es, online=False)
+    plot_results('results_offline.csv')
+
     # main(files, es, online=True)
