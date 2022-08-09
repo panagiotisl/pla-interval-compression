@@ -10,10 +10,18 @@ public class DecompressorSwingFilter {
     private int currentElement = 0;
     private int currentTimestampOffset = 0;
     private SwingSegment swingSegment;
+	private SwingSegment nextSwingSegment;
+	private long finalTimestamp;
+	private long lastTimestamp;
 
-    public DecompressorSwingFilter(List<? extends SwingSegment> swingSegments) {
+    public DecompressorSwingFilter(List<? extends SwingSegment> swingSegments, long lastTimestamp) {
     	this.swingSegments = swingSegments;
-    	this.swingSegment = swingSegments.get(currentElement);
+    	this.swingSegment = swingSegments.get(0);
+		if (swingSegments.size() > 1)
+			this.nextSwingSegment = swingSegments.get(1);
+		else
+			this.nextSwingSegment = null;
+		this.lastTimestamp = lastTimestamp;
     }
 
     /**
@@ -30,13 +38,21 @@ public class DecompressorSwingFilter {
     }
 
     private void next() {
-    	if (swingSegment.getFinalTimestamp() >= (swingSegment.getInitialTimestamp() + currentTimestampOffset)) {
+		if (nextSwingSegment != null)
+			finalTimestamp = nextSwingSegment.getInitialTimestamp();
+		else
+			finalTimestamp = lastTimestamp + 1;
+    	if (finalTimestamp > (swingSegment.getInitialTimestamp() + currentTimestampOffset)) {
     		storedVal = (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp() + currentTimestampOffset);
     		currentTimestampOffset++;
     	} else {
     		currentElement++;
     		if (currentElement < swingSegments.size()) {
     			swingSegment = swingSegments.get(currentElement);
+				if (currentElement + 1 < swingSegments.size())
+					nextSwingSegment = swingSegments.get(currentElement + 1);
+				else
+					nextSwingSegment = null;
     			storedVal = (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp());
 
     			currentTimestampOffset = 1;

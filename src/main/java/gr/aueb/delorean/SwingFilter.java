@@ -30,11 +30,11 @@ public class SwingFilter {
                     LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(),
                             current.getTimestamp(),
                             (uiOld.get(current.getTimestamp()) + liOld.get(current.getTimestamp())) / 2);
-                    swingSegments.add(new SwingSegment(first.getTimestamp(), current.getTimestamp(), line));
+                    swingSegments.add(new SwingSegment(first.getTimestamp(), line));
                 } else {
                 	LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(),
                             first.getTimestamp() + 1, first.getValue());
-                    swingSegments.add(new SwingSegment(first.getTimestamp(), first.getTimestamp(), line));
+                    swingSegments.add(new SwingSegment(first.getTimestamp(), line));
                 }
                 return swingSegments;
             }
@@ -45,7 +45,7 @@ public class SwingFilter {
 
             	LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(),
                         previous.getTimestamp(), (uiOld.get(previous.getTimestamp()) + liOld.get(previous.getTimestamp())) / 2);
-                swingSegments.add(new SwingSegment(first.getTimestamp(), previous.getTimestamp() - 1, line));
+                swingSegments.add(new SwingSegment(first.getTimestamp(), line));
                 previous = first = new Point(previous.getTimestamp(), (float) line.get(previous.getTimestamp()));
                 uiOld = new LinearFunction(previous.getTimestamp(), previous.getValue(), current.getTimestamp(),
                         current.getValue() + epsilon);

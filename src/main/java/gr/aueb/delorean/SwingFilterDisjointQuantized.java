@@ -1,8 +1,6 @@
 package gr.aueb.delorean;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class SwingFilterDisjointQuantized {
 
@@ -27,7 +25,7 @@ public class SwingFilterDisjointQuantized {
 					double upLim = aMax * (idx - recordings.get(0)) + b;
 					double downLim = aMin * (idx - recordings.get(0)) + b;
 					if (downValue > upLim || upValue < downLim) {
-						swingSegments.add(new SwingSegmentDisjointQuantized(recordings.get(0), idx - 1, aMin, aMax, b));
+						swingSegments.add(new SwingSegmentDisjointQuantized(recordings.get(0), aMin, aMax, b));
 						recordings.clear();
 						recordings.add(idx++);
 						continue;
@@ -55,7 +53,7 @@ public class SwingFilterDisjointQuantized {
 		}
 		if (recordings.size() >= 0) {
 			float b = quantizationFunc(points.get(recordings.get(0)).getValue(), epsilon);
-			swingSegments.add(new SwingSegmentDisjointQuantized(recordings.get(0), idx - 1, aMin, aMax, b));
+			swingSegments.add(new SwingSegmentDisjointQuantized(recordings.get(0), aMin, aMax, b));
 		}
 		return swingSegments;
 	}
@@ -84,7 +82,7 @@ public class SwingFilterDisjointQuantized {
 				if (uiOld != null && liOld !=null && (uiOld.get(point.getTimestamp()) < point.getValue() || liOld.get(point.getTimestamp()) > point.getValue())) {
 					LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), point.getTimestamp(), (uiOld.get(point.getTimestamp()) + liOld.get(point.getTimestamp())) / 2);
 //					System.out.println("need to start new line: " + line.toString() + " : " + first.getTimestamp() + " " + (point.getTimestamp() - 1));
-					swingSegments.add(new SwingSegment(first.getTimestamp(), point.getTimestamp() - 1, line));
+					swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 					uiOld = null;
 					liOld = null;
 					first = point;
@@ -107,15 +105,60 @@ public class SwingFilterDisjointQuantized {
 		if (uiOld != null && liOld !=null) {
 //			System.out.println("need to start new line");
 			LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), last.getTimestamp(), (uiOld.get(last.getTimestamp()) + liOld.get(last.getTimestamp())) / 2);
-			swingSegments.add(new SwingSegment(first.getTimestamp(), last.getTimestamp(), line));
+			swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 		} else {
 			LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), first.getTimestamp() + 1, first.getValue());
-			swingSegments.add(new SwingSegment(first.getTimestamp(), first.getTimestamp(), line));
+			swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 		}
 
 		return swingSegments;
 	}
 
+	public ArrayList<SwingSegmentDisjointQuantizedGroup> mergeSegments(List<SwingSegmentDisjointQuantized> constants) {
+		ArrayList<SwingSegmentDisjointQuantizedGroup> segmentsMerged = new ArrayList<>();
+		SwingSegmentDisjointQuantizedGroup mergedSeg;
+
+		List<SwingSegmentDisjointQuantized> sortedConstants = constants.stream().sorted(Comparator.comparingDouble(SwingSegmentDisjointQuantized::getaMin)).toList();
+		TreeMap<Float, List<SwingSegmentDisjointQuantized>> segmentsPerB = new TreeMap<>();
+		for (SwingSegmentDisjointQuantized segments : sortedConstants){
+			List<SwingSegmentDisjointQuantized> temp = segmentsPerB.getOrDefault(segments.getB(), new ArrayList<>());
+			temp.add(segments);
+			segmentsPerB.put(segments.getB(), temp);
+		}
+		for (Map.Entry<Float, List<SwingSegmentDisjointQuantized>> bSegments : segmentsPerB.entrySet()){
+			List<SwingSegmentDisjointQuantized> seg = bSegments.getValue();
+			Iterator<SwingSegmentDisjointQuantized> it = seg.iterator();
+			SwingSegmentDisjointQuantized currentSeg = it.next();
+			mergedSeg = new SwingSegmentDisjointQuantizedGroup(currentSeg.getInitialTimestamp(), currentSeg.getaMin(), currentSeg.getaMax(), currentSeg.getB());
+			while (it.hasNext()) {
+				currentSeg = it.next();
+				if (currentSeg.aMin <= mergedSeg.aMax && currentSeg.aMax >= mergedSeg.aMin) {
+					mergedSeg.addTimestamp(currentSeg.getInitialTimestamp());
+					mergedSeg.aMin = Math.max(mergedSeg.aMin, currentSeg.aMin);
+					mergedSeg.aMax = Math.min(mergedSeg.aMax, currentSeg.aMax);
+				}
+				else{
+					segmentsMerged.add(mergedSeg);
+					mergedSeg = new SwingSegmentDisjointQuantizedGroup(currentSeg.getInitialTimestamp(), currentSeg.getaMin(), currentSeg.getaMax(), currentSeg.getB());
+				}
+			}
+			segmentsMerged.add(mergedSeg);
+		}
+
+		return segmentsMerged;
+	}
+
+	public List<SwingSegmentDisjointQuantized> reconstruct(List<SwingSegmentDisjointQuantizedGroup> constantsMerged) {
+		List<SwingSegmentDisjointQuantized> constants = new ArrayList<>();
+		for (SwingSegmentDisjointQuantizedGroup constantMerged : constantsMerged){
+			Iterator<Long> timestampIterator = constantMerged.getTimestampIterator();
+			while (timestampIterator.hasNext())
+				constants.add(new SwingSegmentDisjointQuantized(timestampIterator.next(), constantMerged.getaMin(), constantMerged.getaMax(), constantMerged.getB()));
+			}
+		constants = constants.stream().sorted(Comparator.comparingDouble(SwingSegmentDisjointQuantized::getInitialTimestamp)).toList();
+
+		return constants;
+	}
 
 
 	/**

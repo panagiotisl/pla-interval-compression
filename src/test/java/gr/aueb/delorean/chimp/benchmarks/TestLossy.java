@@ -6,19 +6,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import gr.aueb.delorean.*;
 import org.junit.jupiter.api.Test;
 
-import gr.aueb.delorean.DecompressorPmcMr;
-import gr.aueb.delorean.DecompressorSwingFilter;
-import gr.aueb.delorean.PmcMR;
 import gr.aueb.delorean.PmcMR.Constant;
-import gr.aueb.delorean.Point;
-import gr.aueb.delorean.SwingFilter;
-import gr.aueb.delorean.SwingFilterDisjointQuantized;
-import gr.aueb.delorean.SwingSegment;
-import gr.aueb.delorean.SwingSegmentDisjointQuantized;
 
 /**
  * These are generic tests to test that input matches the output after compression + decompression cycle, using
@@ -29,9 +23,9 @@ public class TestLossy {
 
 	private static final int MINIMUM_TOTAL_BLOCKS = 50_000;
 	private static String[] FILENAMES = {
-			"/AgiaParaskeviCleanTemp_Scaled.csv.gz",
+			"/AgiaParaskeviCleanTemp.csv.gz",
 	        "/city_temperature.csv.gz",
-	        "/Stocks-Germany-sample.txt.gz",
+//	        "/Stocks-Germany-sample.txt.gz",
 	        "/SSD_HDD_benchmarks.csv.gz"
 			};
 
@@ -105,7 +99,7 @@ public class TestLossy {
                 long encodingDuration = 0;
                 long decodingDuration = 0;
                 while ((values = timeseriesFileReader.nextBlock()) != null && totalBlocks < MINIMUM_TOTAL_BLOCKS) {
-                    Collection<Point> points = new ArrayList<>();
+                    ArrayList<Point> points = new ArrayList<>();
                     for (Double value : values) {
                         points.add(new Point(timestamp++, value.floatValue()));
                     }
@@ -118,7 +112,7 @@ public class TestLossy {
                     totalBlocks += 1;
                     totalSize += constants.size() * (2 * 32);
 
-                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants);
+                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp());
                     for (Double value : values) {
                         start = System.nanoTime();
                         maxValue = value > maxValue ? value : maxValue;
@@ -270,14 +264,19 @@ public class TestLossy {
                     }
 
                     long start = System.nanoTime();
-                    List<SwingSegmentDisjointQuantized> constants = new SwingFilterDisjointQuantized().filter(points, epsilon);
+                    SwingFilterDisjointQuantized sfdq = new SwingFilterDisjointQuantized();
+                    List<SwingSegmentDisjointQuantized> constants = sfdq.filter(points, epsilon);
+
+                    List<SwingSegmentDisjointQuantizedGroup> constantsMerged = sfdq.mergeSegments(constants);
+                    constants = sfdq.reconstruct(constantsMerged);
+
                     encodingDuration += System.nanoTime() - start;
 
                     totalStdev += TimeseriesFileReader.sd(points.stream().map(l -> (float) l.getValue()).collect(Collectors.toList()));
                     totalBlocks += 1;
                     totalSize += constants.size() * ( 2 * 64 + 32);
 
-                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants);
+                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp());
                     for (Double value : values) {
                         start = System.nanoTime();
                         maxValue = value > maxValue ? value : maxValue;
@@ -286,7 +285,7 @@ public class TestLossy {
                         decodingDuration += System.nanoTime() - start;
                         double precisionError = Math.abs(value.doubleValue() - decompressedValue);
                         maxPrecisionError = (precisionError > maxPrecisionError) ? precisionError : maxPrecisionError;
-                        assertEquals(value.floatValue(), decompressedValue.floatValue(), epsilon + epsilon / 1000, "Value did not match");
+                        assertEquals(value.floatValue(), decompressedValue, epsilon + epsilon / 1000, "Value did not match");
                     }
                 }
                 System.out.println(String.format(

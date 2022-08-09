@@ -26,7 +26,7 @@ public class SwingFilterDisjoint {
 				if (uiOld != null && liOld !=null && (uiOld.get(point.getTimestamp()) < point.getValue() || liOld.get(point.getTimestamp()) > point.getValue())) {
 					LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), point.getTimestamp(), (uiOld.get(point.getTimestamp()) + liOld.get(point.getTimestamp())) / 2);
 //					System.out.println("need to start new line: " + line.toString() + " : " + first.getTimestamp() + " " + (point.getTimestamp() - 1));
-					swingSegments.add(new SwingSegment(first.getTimestamp(), point.getTimestamp() - 1, line));
+					swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 					uiOld = null;
 					liOld = null;
 					first = point;
@@ -49,10 +49,10 @@ public class SwingFilterDisjoint {
 		if (uiOld != null && liOld !=null) {
 //			System.out.println("need to start new line");
 			LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), last.getTimestamp(), (uiOld.get(last.getTimestamp()) + liOld.get(last.getTimestamp())) / 2);
-			swingSegments.add(new SwingSegment(first.getTimestamp(), last.getTimestamp(), line));
+			swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 		} else {
 			LinearFunction line = new LinearFunction(first.getTimestamp(), first.getValue(), first.getTimestamp() + 1, first.getValue());
-			swingSegments.add(new SwingSegment(first.getTimestamp(), first.getTimestamp(), line));
+			swingSegments.add(new SwingSegment(first.getTimestamp(), line));
 		}
 
 		return swingSegments;
