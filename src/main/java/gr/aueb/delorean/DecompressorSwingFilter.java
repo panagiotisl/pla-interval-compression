@@ -13,8 +13,9 @@ public class DecompressorSwingFilter {
 	private SwingSegment nextSwingSegment;
 	private long finalTimestamp;
 	private long lastTimestamp;
+	private boolean disjoint;
 
-    public DecompressorSwingFilter(List<? extends SwingSegment> swingSegments, long lastTimestamp) {
+    public DecompressorSwingFilter(List<? extends SwingSegment> swingSegments, long lastTimestamp, boolean disjoint) {
     	this.swingSegments = swingSegments;
     	this.swingSegment = swingSegments.get(0);
 		if (swingSegments.size() > 1)
@@ -22,6 +23,7 @@ public class DecompressorSwingFilter {
 		else
 			this.nextSwingSegment = null;
 		this.lastTimestamp = lastTimestamp;
+		this.disjoint = disjoint;
     }
 
     /**
@@ -38,12 +40,10 @@ public class DecompressorSwingFilter {
     }
 
     private void next() {
-		if (nextSwingSegment != null)
-			finalTimestamp = nextSwingSegment.getInitialTimestamp();
-		else
-			finalTimestamp = lastTimestamp + 1;
-    	if (finalTimestamp > (swingSegment.getInitialTimestamp() + currentTimestampOffset)) {
-    		storedVal = (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp() + currentTimestampOffset);
+		finalTimestamp = nextSwingSegment != null ? nextSwingSegment.getInitialTimestamp() : lastTimestamp + 1;
+
+		if (finalTimestamp > swingSegment.getInitialTimestamp() + currentTimestampOffset) {
+    		storedVal = disjoint ? (float) swingSegment.getLine().getDisjoint(swingSegment.getInitialTimestamp() + currentTimestampOffset, swingSegment.getInitialTimestamp()) :  (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp() + currentTimestampOffset);
     		currentTimestampOffset++;
     	} else {
     		currentElement++;
@@ -53,7 +53,7 @@ public class DecompressorSwingFilter {
 					nextSwingSegment = swingSegments.get(currentElement + 1);
 				else
 					nextSwingSegment = null;
-    			storedVal = (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp());
+				storedVal = disjoint ? (float) swingSegment.getLine().getDisjoint(swingSegment.getInitialTimestamp(), swingSegment.getInitialTimestamp()) : (float) swingSegment.getLine().get(swingSegment.getInitialTimestamp());
 
     			currentTimestampOffset = 1;
     		} else {

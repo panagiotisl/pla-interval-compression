@@ -51,10 +51,11 @@ public class SwingFilterDisjointQuantized {
 				recordings.add(idx++);
 			}
 		}
-		if (recordings.size() >= 0) {
+		if (!recordings.isEmpty()) {
 			float b = quantizationFunc(points.get(recordings.get(0)).getValue(), epsilon);
 			swingSegments.add(new SwingSegmentDisjointQuantized(recordings.get(0), aMin, aMax, b));
 		}
+
 		return swingSegments;
 	}
 

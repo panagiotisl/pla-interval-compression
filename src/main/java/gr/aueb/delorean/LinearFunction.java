@@ -34,6 +34,10 @@ public class LinearFunction {
         return (this.a * ts + this.b);
     }
 
+    public double getDisjoint(long ts, long tsStart){
+        return this.a * (ts - tsStart) + this.b;
+    }
+
     /** Instance Variables **/
     public final double a, b;
 

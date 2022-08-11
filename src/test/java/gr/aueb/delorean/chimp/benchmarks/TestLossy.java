@@ -25,7 +25,7 @@ public class TestLossy {
 	private static String[] FILENAMES = {
 			"/AgiaParaskeviCleanTemp.csv.gz",
 	        "/city_temperature.csv.gz",
-//	        "/Stocks-Germany-sample.txt.gz",
+	        "/Stocks-Germany-sample.txt.gz",
 	        "/SSD_HDD_benchmarks.csv.gz"
 			};
 
@@ -112,7 +112,7 @@ public class TestLossy {
                     totalBlocks += 1;
                     totalSize += constants.size() * (2 * 32);
 
-                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp());
+                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp(), false);
                     for (Double value : values) {
                         start = System.nanoTime();
                         maxValue = value > maxValue ? value : maxValue;
@@ -276,7 +276,7 @@ public class TestLossy {
                     totalBlocks += 1;
                     totalSize += constants.size() * ( 2 * 64 + 32);
 
-                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp());
+                    DecompressorSwingFilter d = new DecompressorSwingFilter(constants, points.get(points.size() - 1).getTimestamp(), true);
                     for (Double value : values) {
                         start = System.nanoTime();
                         maxValue = value > maxValue ? value : maxValue;
